@@ -1,0 +1,11 @@
+FROM  node:18-buster
+
+WORKDIR  /usr/src/app
+
+COPY docker_init_ms.sh  /usr/src/
+
+RUN apt-get update -y  && apt-get install dos2unix -y && dos2unix /usr/src/docker_init_ms.sh
+
+RUN chmod 755 /usr/src/docker_init_ms.sh
+
+ENTRYPOINT ["/usr/src/docker_init_ms.sh"]  

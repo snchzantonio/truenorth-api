@@ -1,0 +1,151 @@
+version: "3"
+
+services:
+  operation_database:
+    image: mysql:8.0.19
+    environment:
+      - "MYSQL_USER=${OPERATION_DB_USER}"
+      - "MYSQL_DATABASE=${OPERATION_DB_DATABASE}"
+      - "MYSQL_PASSWORD=${OPERATION_DB_USER_PASSWORD}"
+      - "MYSQL_ROOT_PASSWORD=${OPERATION_DB_ROOT_PASSWORD}"
+
+    volumes:
+      # - "./docker/mysql/operation_data:/var/lib/mysql"
+      - "./docker/mysql/conf.d:/etc/mysql/conf.d"
+      - "./docker/mysql/docker-entrypoint-initdb.d-operation:/docker-entrypoint-initdb.d"
+
+    restart: unless-stopped
+
+    ports:
+      - "3332:3306"
+    networks:
+      antonio_code_challenge_test:
+
+  report_database:
+    image: mysql:8.0.19
+    environment:
+      - "MYSQL_USER=${REPORT_DB_USER}"
+      - "MYSQL_DATABASE=${REPORT_DB_DATABASE}"
+      - "MYSQL_PASSWORD=${REPORT_DB_USER_PASSWORD}"
+      - "MYSQL_ROOT_PASSWORD=${REPORT_DB_ROOT_PASSWORD}"
+
+    volumes:
+      # - "./docker/mysql/report_data:/var/lib/mysql"
+      - "./docker/mysql/conf.d:/etc/mysql/conf.d"
+      - "./docker/mysql/docker-entrypoint-initdb.d-report:/docker-entrypoint-initdb.d"
+
+    restart: unless-stopped
+
+    ports:
+      - "3331:3306"
+    networks:
+      antonio_code_challenge_test:
+
+  auth_database:
+    image: mysql:8.0.19
+    environment:
+      - "MYSQL_USER=${AUTH_DB_USER}"
+      - "MYSQL_DATABASE=${AUTH_DB_DATABASE}"
+      - "MYSQL_PASSWORD=${AUTH_DB_USER_PASSWORD}"
+      - "MYSQL_ROOT_PASSWORD=${AUTH_DB_ROOT_PASSWORD}"
+
+    volumes:
+      # - "./docker/mysql/auth_data:/var/lib/mysql"
+      - "./docker/mysql/conf.d:/etc/mysql/conf.d"
+      - "./docker/mysql/docker-entrypoint-initdb.d-auth:/docker-entrypoint-initdb.d"
+
+    restart: unless-stopped
+
+    ports:
+      - "3330:3306"
+
+    networks:
+      antonio_code_challenge_test:
+
+  operation_ms:
+    build:
+      dockerfile: ./dockerfile_ms
+    volumes:
+      - "./operation_ms:/usr/src/app"
+
+    restart: always
+
+    depends_on:
+      - operation_database
+      - rabbitmq
+
+    networks:
+      antonio_code_challenge_test:
+
+  report_ms:
+    build:
+      dockerfile: ./dockerfile_ms
+    volumes:
+      - "./report_ms:/usr/src/app"
+
+    restart: always
+
+    depends_on:
+      - rabbitmq
+      - report_database
+
+    networks:
+      antonio_code_challenge_test:
+
+  auth_ms:
+    build:
+      dockerfile: ./dockerfile_ms
+    volumes:
+      - "./auth_ms:/usr/src/app"
+
+    restart: always
+
+    depends_on:
+      - auth_database
+      - rabbitmq
+
+    networks:
+      antonio_code_challenge_test:
+
+  gateway_ms:
+    build:
+      dockerfile: ./dockerfile_ms
+    volumes:
+      - "./gateway_ms:/usr/src/app"
+
+    restart: always
+
+    ports:
+      - "${GATEWAY_PORT}:3001"
+
+    depends_on:
+      - rabbitmq
+
+    networks:
+      antonio_code_challenge_test:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      antonio_code_challenge_test:
+
+  caddy:
+    image: caddy:2.6.4-alpine
+    volumes:
+      - "./docker/caddy/Caddyfile:/etc/caddy/Caddyfile"
+      - "./docker/caddy/data:/data"
+      - "./docker/caddy/config:/config"
+    depends_on:
+      - gateway_ms
+    networks:
+      antonio_code_challenge_test:  
+    ports:
+      - 80:80
+      - 443:443
+
+networks:
+  antonio_code_challenge_test:
+    driver: bridge

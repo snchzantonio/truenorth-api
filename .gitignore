@@ -1,0 +1,16 @@
+docker/mysql/operation_data
+docker/mysql/auth_data
+docker/mysql/record_data
+docker/caddy/data
+docker/caddy/config
+.env
+/*/.env
+notes.md
+auth_ms/dist/
+auth_ms/node_modules/
+operation_ms/dist/
+operation_ms/node_modules/
+report_ms/dist/
+report_ms/node_modules/
+gateway_ms/dist/
+gateway_ms/node_modules/
